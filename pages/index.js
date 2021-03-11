@@ -1,65 +1,68 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import { useEffect, useState } from "react";
+import Header from "../components/header";
+import AddTodo from "../containers/addTodo";
+import TodoList from "../containers/todoList";
+import axios from "axios";
 
 export default function Home() {
+  const [todos, setTodos] = useState([]);
+
+  useEffect(async () => {
+    const result = await axios.get("http://localhost:1337/todos");
+    setTodos(result?.data);
+  }, []);
+
+  const addTodo = async (todoText) => {
+    if (todoText && todoText.length > 0) {
+      const result = await axios.post("http://localhost:1337/todos", {
+        todoText: todoText,
+      });
+      setTodos([...todos, result?.data]);
+    }
+  };
+
+  const deleteTodoItem = async (todo) => {
+    if (confirm("Do you really want to delete this item?")) {
+      await axios.delete("http://localhost:1337/todos/" + todo.id);
+      const newTodos = todos.filter((_todo) => _todo.id !== todo.id);
+      console.log(newTodos);
+      setTodos(newTodos);
+    }
+  };
+
+  const editTodoItem = async (todo) => {
+    const newTodoText = prompt("Enter new todo text or description:");
+    if (newTodoText != null) {
+      const result = await axios.put("http://localhost:1337/todos/" + todo.id, {
+        todoText: newTodoText,
+      });
+      const moddedTodos = todos.map((_todo) => {
+        if (_todo.id === todo.id) {
+          return result?.data;
+        } else {
+          return _todo;
+        }
+      });
+      setTodos(moddedTodos);
+    }
+  };
+
   return (
-    <div className={styles.container}>
+    <div>
       <Head>
-        <title>Create Next App</title>
+        <title>ToDo app</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+      <Header />
+      <main className="main">
+        <AddTodo addTodo={addTodo} />
+        <TodoList
+          todos={todos}
+          deleteTodoItem={deleteTodoItem}
+          editTodoItem={editTodoItem}
+        />
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
     </div>
-  )
+  );
 }
